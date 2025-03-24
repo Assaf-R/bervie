@@ -7,6 +7,6 @@ The eBpf program checks if the file that is set to be executed checks any YARA d
 The results are logged to /var/log/loch/bervieX.log
 
 ### How to run
-***RUN AS ROOT*** \
+***RUN AS ROOT*** 
 
 $ pip install yara-python
