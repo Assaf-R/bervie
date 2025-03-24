@@ -25,7 +25,11 @@ rules = yara.compile(filepath=YARA_RULES_PATH)
 
 def check_against_yara(filepath):
     """ Scan the file with YARA and return True (1) if it's flagged, otherwise False (0). """
-    return rules.match(filepath)
+    matches = rules.match(filepath)
+    if matches:
+        return 1
+    else:
+        return 0
     # try:
     #     matches = rules.match(filepath)
     #     return 1 if matches else 0
@@ -48,7 +52,9 @@ def process_data(cpu, data, size):
         "parent_process_name": data.parent_process_name.decode(),
     }
     
-    b["block_list"][0] = check_against_yara(event["process_path"])  # Key is always 0
+    b["is_block"][ctypes.c_int(0)] = ctypes.c_int(check_against_yara(event["process_path"]))
+    
+    # check_against_yara(event["process_path"])  # Key is always 0
 
     print(event)
 
