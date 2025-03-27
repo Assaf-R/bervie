@@ -1,5 +1,7 @@
 #include <linux/sched.h>  // For task_struct
 #include <linux/ptrace.h> // For struct pt_regs
+// #include <linux/dcache.h> // For dentry_path_raw
+// #include <linux/fs.h>     // For struct fs_struct
 
 struct triggered_event {
     u64 event_time;
@@ -7,8 +9,9 @@ struct triggered_event {
     int pid;
     int ppid;
     int uid;
-    char process_path[256];  // Use a larger buffer for full path
+    char process_path[128];  // Use a larger buffer for full path
     char parent_process_name[TASK_COMM_LEN];
+    // char cwd[128];  // Store absolute path
 };
 
 BPF_PERF_OUTPUT(output);
@@ -28,6 +31,8 @@ int syscall__execve(struct pt_regs *ctx, const char __user *pathname, char *cons
 
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
     struct task_struct *parent_task = task->real_parent;
+    // struct fs_struct *fs;
+    // struct path pwd;
 
     // Get parent process name
     bpf_probe_read_kernel_str(event.parent_process_name, TASK_COMM_LEN, parent_task->comm);
@@ -35,6 +40,17 @@ int syscall__execve(struct pt_regs *ctx, const char __user *pathname, char *cons
     
     // Get the full pathname of the new process (target binary)
     bpf_probe_read_user_str(event.process_path, sizeof(event.process_path), pathname);
+
+
+    // // Get the fs_struct
+    // bpf_probe_read_kernel(&fs, sizeof(fs), &task->fs);
+    // if (fs) {
+    //     // Get the current working directory
+    //     bpf_probe_read_kernel(&pwd, sizeof(pwd), &fs->pwd);
+    //     // bpf_probe_read_kernel_str(event.cwd, sizeof(event.cwd), pwd.dentry->d_name.name);
+    // }
+
+
 
     // Submit event
     output.perf_submit(ctx, &event, sizeof(event));
